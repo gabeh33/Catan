@@ -1,5 +1,7 @@
 # The classic Catan board game by Gabe Holmes, will make it multiplayer eventually
 # Right now focusing on playing against one bot
+from enum import Enum
+
 import pygame
 import os
 
@@ -33,6 +35,13 @@ SHEEP = resource_tiles[4]
 WHEAT = resource_tiles[5]
 
 
+class DevCard(Enum):
+    Knight = 14
+    VictoryPoint = 5
+    RoadBuilding = 2
+    YearOfPlenty = 2
+    Monopoly = 2
+
 # Renders all of the info
 def draw_board():
     WIN.fill(BLUE)
@@ -55,6 +64,23 @@ class Board:
         # maps to a list of int because most numbers, such as 6 and 8, will appear multiple times on the board
         self.number_tile_mapping = {2: [17], 3: [8, 15], 4: [3, 10], 5: [5, 16], 6: [4, 18], 7: None,
                                     8: [11, 12], 9: [2, 14], 10: [6, 13], 11: [0, 9], 12: [1]}
+
+        # List containing all of the development cards
+        self.dev_cards = []
+        self.init_dev_cards()
+
+    def init_dev_cards(self):
+        for i in range(25):
+            if i < 2:
+                self.dev_cards.append(DevCard.Monopoly)
+            elif i < 4:
+                self.dev_cards.append(DevCard.YearOfPlenty)
+            elif i < 6:
+                self.dev_cards.append(DevCard.RoadBuilding)
+            elif i < 11:
+                self.dev_cards.append(DevCard.VictoryPoint)
+            elif i < 25:
+                self.dev_cards.append(DevCard.Knight)
 
     def gen_random_board(self):
         # TODO Make this board generate a random assortment of tiles, but only allowing 4 of any one resource
@@ -102,7 +128,7 @@ class Board:
 
 
 class Player:
-    def __init__(self):
+    def __init__(self, is_bot=False):
         self.brick = 0
         self.wheat = 0
         self.wood = 0
@@ -116,6 +142,12 @@ class Player:
         self.resource_cards = []
         self.init_resource_cards()
 
+        self.isBot = is_bot
+
+        self.max_roads = 15
+        self.max_cities = 4
+        self.max_settlements = 5
+
     def init_resource_cards(self):
         card_names = ['brick', 'wood', 'ore', 'sheep', 'wheat']
         for name in card_names:
@@ -125,6 +157,15 @@ class Player:
 
     def can_build_settlement(self):
         return self.wood and self.wheat and self.sheep and self.brick
+
+    def can_build_city(self):
+        return self.ore >= 3 and self.wheat >= 2
+
+    def can_build_road(self):
+        return self.wood and self.brick
+
+    def can_buy_dev_card(self):
+        return self.sheep and self.wheat and self.ore
 
     # Draws all the information about a players hand, including how many of each resource they have
     # how many and what development cards they have, their victory points,
