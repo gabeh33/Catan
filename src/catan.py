@@ -42,6 +42,7 @@ class DevCard(Enum):
     YearOfPlenty = 2
     Monopoly = 2
 
+
 # Renders all of the info
 def draw_board():
     WIN.fill(BLUE)
