@@ -78,23 +78,36 @@ def place_starting_settlement():
     for pos in legal_settlement_pos:
         pygame.draw.circle(WIN, GRAY, (pos[0], pos[1]), settlement_circle_size)
 
-    # has_chosen is False until the player clicks in a legal position
 
-
-# Renders all of the info
-def draw_board(board, player, place_settlements, settlements_placed, total):
-    WIN.fill(BLUE)
-    board.draw_board()
-    player.draw_hand()
-    if place_settlements:
-        place_starting_settlement()
-    for pos in settlements_placed:
-        pygame.draw.circle(WIN, RED, (pos[0], pos[1]), settlement_circle_size)
+# Displays the total rolled from the dice
+def draw_total_rolled(total):
     font = pygame.font.Font('freesansbold.ttf', 18)
     roll_dice = font.render(str(total), True, BLACK, GREEN)
     dice_small_rect = roll_dice.get_bounding_rect()
     dice_small_rect.center = (60, 30)
     WIN.blit(roll_dice, dice_small_rect)
+
+
+def draw_dev_card_display(player):
+    pass
+
+
+# Renders all of the info
+def draw_board(board, player, place_settlements, settlements_placed, total, dev_card_display):
+    WIN.fill(BLUE)
+    board.draw_board()
+    player.draw_hand()
+
+    if place_settlements:
+        place_starting_settlement()
+    for pos in settlements_placed:
+        pygame.draw.circle(WIN, RED, (pos[0], pos[1]), settlement_circle_size)
+
+    draw_total_rolled(total)
+
+    if dev_card_display:
+        player.draw_dev_display()
+
     pygame.display.update()
 
 
@@ -274,6 +287,13 @@ class Player:
         self.max_cities = 4
         self.max_settlements = 5
 
+        self.knights = 0
+        self.vp_cards = 0
+        self.road_building = 0
+        self.year_of_plenty = 0
+        self.monopoly = 0
+        self.dev_cards = []
+
     def init_resource_cards(self):
         card_names = ['brick', 'wood', 'ore', 'sheep', 'wheat']
         for name in card_names:
@@ -284,19 +304,14 @@ class Player:
     def update_resources(self, resource_string):
         print(F"Resource massed = {resource_string}")
         if resource_string == "WHEAT":
-            print("got wheat")
             self.wheat += 1
         elif resource_string == "BRICK":
-            print("got brick")
             self.brick += 1
         elif resource_string == "SHEEP":
-            print("got sheep")
             self.sheep += 1
         elif resource_string == "WOOD":
-            print("got wood")
             self.wood += 1
         elif resource_string == "ORE":
-            print("got ore")
             self.ore += 1
         else:
             return
@@ -330,6 +345,16 @@ class Player:
         WIN.blit(self.resource_cards[3], (starting_x + self.card_width + horizontal_buffer,
                                           starting_y + self.card_height + vertical_buffer))
         WIN.blit(self.resource_cards[4], (starting_x + 2 * self.card_width + 2 * horizontal_buffer, starting_y))
+
+        # Draw the development card
+        # If a user clicks on this card, they will be able to see how many of each development card they have
+        dev_card_default = pygame.image.load(os.path.join('Assets', 'DevCards', 'dvc.png'))
+        dev_card_default = pygame.transform.scale(dev_card_default, (self.card_width, self.card_height))
+        WIN.blit(dev_card_default, (starting_x + 2 * self.card_width + 2 * horizontal_buffer,
+                                    starting_y + self.card_height + vertical_buffer))
+        # boundaries are 20 + 120 + 10 = 150
+        #                 510 + 80 + 5 = 595
+        # then 210, 675
 
         # Draw the amount of each resource that the player has
         font = pygame.font.Font('freesansbold.ttf', 18)
@@ -377,6 +402,32 @@ class Player:
         # Boundaries are width - 100, height - 36
         # width - 17, height - 21
 
+    def draw_dev_display(self):
+        horizontal_buffer = 5
+        vertical_buffer = 3
+        starting_x = 9
+        starting_y = 484
+        # First draw a white rectangle coming from the dev card displayed
+        pygame.draw.rect(WIN, WHITE, pygame.Rect(starting_x, starting_y, self.card_width * 5 + horizontal_buffer * 6,
+                                                 self.card_height + vertical_buffer * 2))
+        pygame.draw.polygon(WIN, WHITE, [(166, 597), (188, 597), (235, 564), (115, 564)])
+
+        # Create the cards
+        card_names = ['chapel', 'knight', 'monopoly', 'road_building', 'year_of_plenty']
+        for name in card_names:
+            # Create the cards and set them to the correct size
+            card = pygame.image.load(os.path.join('Assets', 'DevCards', name + '_dvc.png'))
+            #self.dev_cards.append(pygame.transform.scale(card, (self.card_width * 1.7, self.card_height * 1.7)))
+            #self.dev_cards.append(card)
+            self.dev_cards.append(pygame.transform.scale(card, (card.get_width() / 2.2, card.get_height() / 2.2)))
+
+        # Draw the cards
+        for i, card in enumerate(self.dev_cards):
+            if i == 5:
+                break
+            WIN.blit(card, ((i + 3) * horizontal_buffer + i * card.get_width(), starting_y + vertical_buffer - 150))
+
+
 
 # Checks if the coordinates are a valid settlement position
 # If it is draws a red circle and returns True, False otherwise
@@ -407,10 +458,8 @@ def roll_dice_and_distribute(board, player):
     num2 = random.randint(1, 6)
     total = num1 + num2
     if total == 7:
-        print("Got a 7, returning...")
         return 7
-    print(str(total))
-    # print(F"num1: {num1} num2: {num2} total: {total}")
+
     # List of tuples that contain ((x_cord, y_cord), resource_tile)
     mapping = board.get_number_to_pos_and_resource_mapping()
     lst = mapping[total]
@@ -418,15 +467,17 @@ def roll_dice_and_distribute(board, player):
     for entry in lst:
         if entry[1] != "DESERT":
             for settlement_pos in settlements_placed:
-                if get_distance(settlement_pos[0], settlement_pos[1], entry[0][0],  entry[0][1]) <= circle_radius:
+                if get_distance(settlement_pos[0], settlement_pos[1], entry[0][0], entry[0][1]) <= circle_radius:
                     player.update_resources(entry[1])
     return total
+
 
 def main():
     board1 = Board()
     player1 = Player()
     drew_settlement = False
     draw_starting_settlements = True
+    draw_dev_cards = False
     pos = []
     run = True
     total = -1
@@ -436,15 +487,23 @@ def main():
                 run = False
             if event.type == pygame.MOUSEBUTTONUP:
                 x_cord, y_cord = pygame.mouse.get_pos()
-                #print(str(x_cord) + " " + str(y_cord))
-                pos.append((x_cord, y_cord))
+                print(str(x_cord) + " " + str(y_cord))
+                # pos.append((x_cord, y_cord))
+
+                # Check if a settlement was placed, and if it was don't draw the possible positions
+                # that a settlement can be placed
                 drew_settlement = check_starting_settlement_placed(x_cord, y_cord)
+
+                # Check if the roll dice button was pressed, and if it was distribute the appropriate resources
                 total = check_roll_dice_clicked_and_roll(x_cord, y_cord, board1, player1)
+
+                # Check if the resource card was clicked, and if it was indicate that the dev card display
+                # should be drawn
 
         if drew_settlement:
             draw_starting_settlements = False
 
-        draw_board(board1, player1, draw_starting_settlements, settlements_placed, total)
+        draw_board(board1, player1, draw_starting_settlements, settlements_placed, total, True)
     # print(pos)
     pygame.quit()
 
