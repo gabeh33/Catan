@@ -70,6 +70,16 @@ class Board:
         self.dev_cards = []
         self.init_dev_cards()
 
+        self.number_tiles = []
+        self.init_number_tile_pics()
+
+    def init_number_tile_pics(self):
+        for i in range(2, 13):
+            if i != 7:
+                num = pygame.image.load(os.path.join('Assets', 'NumberTiles', 'number_{}.png'.format(str(i))))
+                num = pygame.transform.scale(num, (28, 28))
+                self.number_tiles.append(num)
+
     def init_dev_cards(self):
         for i in range(25):
             if i < 2:
@@ -96,6 +106,8 @@ class Board:
         rectangle_starting_y = HEIGHT * 0.73
         # First row
         WIN.blit(self.resource_list[0], (starting_x, starting_y))
+        WIN.blit(self.number_tiles[0], (starting_x + TILE_WIDTH / 3,
+                                        starting_y + TILE_HEIGHT / 3))
         WIN.blit(self.resource_list[1], (starting_x + TILE_WIDTH - buffer, starting_y))
         WIN.blit(self.resource_list[2], (starting_x + 2 * TILE_WIDTH - buffer, starting_y))
 
@@ -125,6 +137,7 @@ class Board:
         WIN.blit(self.resource_list[17], (starting_x + TILE_WIDTH - buffer, 4.4 * TILE_HEIGHT * 21 / 28 - 1))
         WIN.blit(self.resource_list[18], (starting_x + 2 * TILE_WIDTH - buffer - 1, 4.4 * TILE_HEIGHT * 21 / 28 - 2))
 
+        # Bottom gray rectangle
         pygame.draw.rect(WIN, GRAY, pygame.Rect(0, rectangle_starting_y, WIDTH, HEIGHT))
 
 
