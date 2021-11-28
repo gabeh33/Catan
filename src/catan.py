@@ -43,11 +43,36 @@ class DevCard(Enum):
     Monopoly = 2
 
 
+# List of x,y coordinates representing all the vertices where settlements can be placed at the start of the game
+# This list will be modified as settlements are placed
+legal_settlement_pos = [(320, 36), (415, 35), (516, 35), (273, 61), (368, 62), (466, 62), (563, 62),
+                        (272, 117), (364, 118), (466, 116), (564, 116), (224, 144), (317, 144),
+                        (414, 147), (515, 146), (613, 146), (221, 200), (320, 200), (416, 202),
+                        (515, 201), (613, 200), (171, 231), (270, 227), (368, 231), (465, 228),
+                        (561, 229), (661, 228), (172, 282), (267, 282), (366, 283), (464, 283),
+                        (562, 283), (661, 283), (221, 311), (318, 310), (415, 312), (512, 311),
+                        (612, 312), (221, 365), (320, 365), (417, 366), (513, 366), (612, 367),
+                        (269, 394), (367, 393), (467, 391), (562, 394), (270, 449), (369, 448),
+                        (466, 449), (564, 449), (319, 477), (417, 477), (513, 477)]
+
+
+def draw_circle(x_pos, y_pos):
+    pygame.draw.circle(WIN, GRAY, (x_pos, y_pos), 10)
+
+
+def place_starting_settlement():
+    # TODO draw circles everywhere settlements can be placed
+    for pos in legal_settlement_pos:
+        draw_circle(pos[0], pos[1])
+
+
 # Renders all of the info
-def draw_board():
+def draw_board(board, player, place_settlements):
     WIN.fill(BLUE)
-    Board().draw_board()
-    Player().draw_hand()
+    board.draw_board()
+    player.draw_hand()
+    if place_settlements:
+        place_starting_settlement()
     pygame.display.update()
 
 
@@ -63,8 +88,6 @@ class Board:
         # Map from int -> list of ints where the first int is a number tile value [2, 12] and the second
         # is the indices in resource_list that the number tile maps to
         # maps to a list of int because most numbers, such as 6 and 8, will appear multiple times on the board
-        self.number_tile_mapping = {2: [17], 3: [8, 15], 4: [3, 10], 5: [5, 16], 6: [4, 18], 7: None,
-                                    8: [11, 12], 9: [2, 14], 10: [6, 13], 11: [0, 9], 12: [1]}
         self.number_tile_mapping = {0: 11, 1: 12, 2: 9, 3: 4, 4: 6, 5: 5, 6: 10, 8: 3, 9: 11,
                                     10: 4, 11: 8, 12: 8, 13: 10, 14: 9, 15: 3, 16: 5, 17: 2, 18: 6}
 
@@ -149,10 +172,10 @@ class Board:
                                                                    starting_y + 5 * TILE_HEIGHT / 3 + 16))
 
         # Fourth row
-        WIN.blit(self.resource_list[12], (starting_x - TILE_WIDTH / 2, starting_y + 3 * TILE_HEIGHT * 21 / 28))
+        WIN.blit(self.resource_list[12], (starting_x - TILE_WIDTH / 2 - 1, starting_y + 3 * TILE_HEIGHT * 21 / 28 - 1))
         WIN.blit(self.number_tiles[self.number_tile_mapping[12]], (starting_x - TILE_WIDTH / 3 + 15,
                                                                    starting_y + 7.5 * TILE_HEIGHT / 3 + 10))
-        WIN.blit(self.resource_list[13], (starting_x + TILE_WIDTH / 2 - 2, starting_y + 3 * TILE_HEIGHT * 21 / 28))
+        WIN.blit(self.resource_list[13], (starting_x + TILE_WIDTH / 2 - 2, starting_y + 3 * TILE_HEIGHT * 21 / 28 - 1))
         WIN.blit(self.number_tiles[self.number_tile_mapping[13]], (starting_x + TILE_WIDTH / 1.6 + 15,
                                                                    starting_y + 7.5 * TILE_HEIGHT / 3 + 10))
         WIN.blit(self.resource_list[14],
@@ -160,12 +183,12 @@ class Board:
         WIN.blit(self.number_tiles[self.number_tile_mapping[14]], (starting_x + 1.63 * TILE_WIDTH + 15,
                                                                    starting_y + 7.5 * TILE_HEIGHT / 3 + 10))
         WIN.blit(self.resource_list[15],
-                 (starting_x + TILE_WIDTH * 2.5 - 4, starting_y + 3 * TILE_HEIGHT * 21 / 28 - 1))
+                 (starting_x + TILE_WIDTH * 2.5 - 5, starting_y + 3 * TILE_HEIGHT * 21 / 28 - 1))
         WIN.blit(self.number_tiles[self.number_tile_mapping[15]], (starting_x + 2.65 * TILE_WIDTH + 15,
                                                                    starting_y + 7.5 * TILE_HEIGHT / 3 + 10))
 
         # Fifth row
-        WIN.blit(self.resource_list[16], (starting_x - 2, 4.4 * TILE_HEIGHT * 21 / 28 - 1))
+        WIN.blit(self.resource_list[16], (starting_x - 2, 4.4 * TILE_HEIGHT * 21 / 28 - 2))
         WIN.blit(self.number_tiles[self.number_tile_mapping[16]], (starting_x + TILE_WIDTH / 3,
                                                                    starting_y + 10 * TILE_HEIGHT / 3))
         WIN.blit(self.resource_list[17], (starting_x + TILE_WIDTH - buffer, 4.4 * TILE_HEIGHT * 21 / 28 - 1))
@@ -276,15 +299,19 @@ class Player:
 
 
 def main():
+    board1 = Board()
+    player1 = Player()
+    need_place_starting_settle = True
     run = True
     while run:
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
+            if event.type == pygame.MOUSEBUTTONUP:
+                if need_place_starting_settle:
+                    need_place_starting_settle = False
 
-        draw_board()
-        Player().draw_hand()
+        draw_board(board1, player1, True)
 
     pygame.quit()
 
