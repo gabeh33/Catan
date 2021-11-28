@@ -65,6 +65,8 @@ class Board:
         # maps to a list of int because most numbers, such as 6 and 8, will appear multiple times on the board
         self.number_tile_mapping = {2: [17], 3: [8, 15], 4: [3, 10], 5: [5, 16], 6: [4, 18], 7: None,
                                     8: [11, 12], 9: [2, 14], 10: [6, 13], 11: [0, 9], 12: [1]}
+        self.number_tile_mapping = {0: 11, 1: 12, 2: 9, 3: 4, 4: 6, 5: 5, 6: 10, 8: 3, 9: 11,
+                                    10: 4, 11: 8, 12: 8, 13: 10, 14: 9, 15: 3, 16: 5, 17: 2, 18: 6}
 
         # List containing all of the development cards
         self.dev_cards = []
@@ -77,8 +79,11 @@ class Board:
         for i in range(2, 13):
             if i != 7:
                 num = pygame.image.load(os.path.join('Assets', 'NumberTiles', 'number_{}.png'.format(str(i))))
-                num = pygame.transform.scale(num, (28, 28))
+                num = pygame.transform.scale(num, (35, 35))
                 self.number_tiles.append(num)
+        self.number_tiles.insert(0, -1)
+        self.number_tiles.insert(0, -1)
+        self.number_tiles.insert(7, -1)
 
     def init_dev_cards(self):
         for i in range(25):
@@ -106,36 +111,69 @@ class Board:
         rectangle_starting_y = HEIGHT * 0.73
         # First row
         WIN.blit(self.resource_list[0], (starting_x, starting_y))
-        WIN.blit(self.number_tiles[0], (starting_x + TILE_WIDTH / 3,
-                                        starting_y + TILE_HEIGHT / 3))
+        WIN.blit(self.number_tiles[self.number_tile_mapping[0]], (starting_x + TILE_WIDTH / 3,
+                                                                  starting_y + TILE_HEIGHT / 3))
         WIN.blit(self.resource_list[1], (starting_x + TILE_WIDTH - buffer, starting_y))
+        WIN.blit(self.number_tiles[self.number_tile_mapping[1]], (starting_x + 4 * TILE_WIDTH / 3,
+                                                                  starting_y + TILE_HEIGHT / 3))
         WIN.blit(self.resource_list[2], (starting_x + 2 * TILE_WIDTH - buffer, starting_y))
-
+        WIN.blit(self.number_tiles[self.number_tile_mapping[2]], (starting_x + 7 * TILE_WIDTH / 3 - 10,
+                                                                  starting_y + TILE_HEIGHT / 3))
         # Second Row
         WIN.blit(self.resource_list[3], (starting_x - TILE_WIDTH / 2, starting_y + TILE_HEIGHT * 21 / 28))
+        WIN.blit(self.number_tiles[self.number_tile_mapping[3]], (starting_x - TILE_WIDTH / 3 + 15,
+                                                                  starting_y + 3 * TILE_HEIGHT / 3 + 10))
         WIN.blit(self.resource_list[4], (starting_x + TILE_WIDTH / 2 - 2, starting_y + TILE_HEIGHT * 21 / 28))
+        WIN.blit(self.number_tiles[self.number_tile_mapping[4]], (starting_x + TILE_WIDTH / 2 + 30,
+                                                                  starting_y + 3 * TILE_HEIGHT / 3 + 10))
         WIN.blit(self.resource_list[5], (starting_x + TILE_WIDTH * 1.5 - 3, starting_y + TILE_HEIGHT * 21 / 28))
+        WIN.blit(self.number_tiles[self.number_tile_mapping[5]], (starting_x + 1.5 * TILE_WIDTH + 30,
+                                                                  starting_y + 3 * TILE_HEIGHT / 3 + 10))
         WIN.blit(self.resource_list[6], (starting_x + TILE_WIDTH * 2.5 - 4, starting_y + TILE_HEIGHT * 21 / 28))
+        WIN.blit(self.number_tiles[self.number_tile_mapping[6]], (starting_x + 2.5 * TILE_WIDTH + 26,
+                                                                  starting_y + 3 * TILE_HEIGHT / 3 + 10))
 
         # Third row
         WIN.blit(self.resource_list[7], (starting_x - TILE_WIDTH, starting_y + 2 * TILE_HEIGHT * 21 / 28))
         WIN.blit(self.resource_list[8], (starting_x - 1, starting_y + 2 * TILE_HEIGHT * 21 / 28))
+        WIN.blit(self.number_tiles[self.number_tile_mapping[8]], (starting_x + TILE_WIDTH / 3,
+                                                                  starting_y + 5 * TILE_HEIGHT / 3 + 16))
         WIN.blit(self.resource_list[9], (starting_x + TILE_WIDTH - 3, starting_y + 2 * TILE_HEIGHT * 21 / 28))
+        WIN.blit(self.number_tiles[self.number_tile_mapping[9]], (starting_x + 1.3 * TILE_WIDTH,
+                                                                  starting_y + 5 * TILE_HEIGHT / 3 + 16))
         WIN.blit(self.resource_list[10], (starting_x + TILE_WIDTH * 2 - 4, starting_y + 2 * TILE_HEIGHT * 21 / 28))
+        WIN.blit(self.number_tiles[self.number_tile_mapping[10]], (starting_x + 2.3 * TILE_WIDTH,
+                                                                   starting_y + 5 * TILE_HEIGHT / 3 + 16))
         WIN.blit(self.resource_list[11], (starting_x + TILE_WIDTH * 3 - 5, starting_y + 2 * TILE_HEIGHT * 21 / 28))
+        WIN.blit(self.number_tiles[self.number_tile_mapping[11]], (starting_x + 3.25 * TILE_WIDTH,
+                                                                   starting_y + 5 * TILE_HEIGHT / 3 + 16))
 
         # Fourth row
         WIN.blit(self.resource_list[12], (starting_x - TILE_WIDTH / 2, starting_y + 3 * TILE_HEIGHT * 21 / 28))
+        WIN.blit(self.number_tiles[self.number_tile_mapping[12]], (starting_x - TILE_WIDTH / 3 + 15,
+                                                                   starting_y + 7.5 * TILE_HEIGHT / 3 + 10))
         WIN.blit(self.resource_list[13], (starting_x + TILE_WIDTH / 2 - 2, starting_y + 3 * TILE_HEIGHT * 21 / 28))
+        WIN.blit(self.number_tiles[self.number_tile_mapping[13]], (starting_x + TILE_WIDTH / 1.6 + 15,
+                                                                   starting_y + 7.5 * TILE_HEIGHT / 3 + 10))
         WIN.blit(self.resource_list[14],
                  (starting_x + TILE_WIDTH * 1.5 - 3, starting_y + 3 * TILE_HEIGHT * 21 / 28 - 1))
+        WIN.blit(self.number_tiles[self.number_tile_mapping[14]], (starting_x + 1.63 * TILE_WIDTH + 15,
+                                                                   starting_y + 7.5 * TILE_HEIGHT / 3 + 10))
         WIN.blit(self.resource_list[15],
                  (starting_x + TILE_WIDTH * 2.5 - 4, starting_y + 3 * TILE_HEIGHT * 21 / 28 - 1))
+        WIN.blit(self.number_tiles[self.number_tile_mapping[15]], (starting_x + 2.65 * TILE_WIDTH + 15,
+                                                                   starting_y + 7.5 * TILE_HEIGHT / 3 + 10))
 
         # Fifth row
         WIN.blit(self.resource_list[16], (starting_x - 2, 4.4 * TILE_HEIGHT * 21 / 28 - 1))
+        WIN.blit(self.number_tiles[self.number_tile_mapping[16]], (starting_x + TILE_WIDTH / 3,
+                                                                   starting_y + 10 * TILE_HEIGHT / 3))
         WIN.blit(self.resource_list[17], (starting_x + TILE_WIDTH - buffer, 4.4 * TILE_HEIGHT * 21 / 28 - 1))
+        WIN.blit(self.number_tiles[self.number_tile_mapping[17]], (starting_x + 4 * TILE_WIDTH / 3,
+                                                                   starting_y + 10 * TILE_HEIGHT / 3))
         WIN.blit(self.resource_list[18], (starting_x + 2 * TILE_WIDTH - buffer - 1, 4.4 * TILE_HEIGHT * 21 / 28 - 2))
+        WIN.blit(self.number_tiles[self.number_tile_mapping[18]], (starting_x + 7 * TILE_WIDTH / 3,
+                                                                   starting_y + 10 * TILE_HEIGHT / 3))
 
         # Bottom gray rectangle
         pygame.draw.rect(WIN, GRAY, pygame.Rect(0, rectangle_starting_y, WIDTH, HEIGHT))
