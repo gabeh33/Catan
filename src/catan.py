@@ -471,6 +471,8 @@ def roll_dice_and_distribute(board, player):
     return total
 
 
+# Returns True of the coordinates passed are within the development card
+# displayed at the bottom of the screen, False otherwise
 def check_dev_card_clicked(x_cord, y_cord):
     # boundaries are 20 + 120 + 10 = 150
     #                 510 + 80 + 5 = 595
