@@ -408,25 +408,24 @@ class Player:
         starting_x = 9
         starting_y = 484
         # First draw a white rectangle coming from the dev card displayed
-        pygame.draw.rect(WIN, WHITE, pygame.Rect(starting_x, starting_y, self.card_width * 5 + horizontal_buffer * 6,
-                                                 self.card_height + vertical_buffer * 2))
-        pygame.draw.polygon(WIN, WHITE, [(166, 597), (188, 597), (235, 564), (115, 564)])
+        pygame.draw.rect(WIN, WHITE, pygame.Rect(starting_x, starting_y + vertical_buffer - 155,
+                                                 760,
+                                                 230))
+        pygame.draw.polygon(WIN, WHITE, [(166, 597), (188, 597), (245, 554), (105, 554)])
 
         # Create the cards
         card_names = ['chapel', 'knight', 'monopoly', 'road_building', 'year_of_plenty']
         for name in card_names:
             # Create the cards and set them to the correct size
             card = pygame.image.load(os.path.join('Assets', 'DevCards', name + '_dvc.png'))
-            #self.dev_cards.append(pygame.transform.scale(card, (self.card_width * 1.7, self.card_height * 1.7)))
-            #self.dev_cards.append(card)
             self.dev_cards.append(pygame.transform.scale(card, (card.get_width() / 2.2, card.get_height() / 2.2)))
 
         # Draw the cards
         for i, card in enumerate(self.dev_cards):
+            # Only draw 5 cards
             if i == 5:
                 break
             WIN.blit(card, ((i + 3) * horizontal_buffer + i * card.get_width(), starting_y + vertical_buffer - 150))
-
 
 
 # Checks if the coordinates are a valid settlement position
@@ -472,6 +471,13 @@ def roll_dice_and_distribute(board, player):
     return total
 
 
+def check_dev_card_clicked(x_cord, y_cord):
+    # boundaries are 20 + 120 + 10 = 150
+    #                 510 + 80 + 5 = 595
+    # then 210, 675
+    return 150 <= x_cord <= 210 and 595 <= y_cord <= 675
+
+
 def main():
     board1 = Board()
     player1 = Player()
@@ -499,11 +505,11 @@ def main():
 
                 # Check if the resource card was clicked, and if it was indicate that the dev card display
                 # should be drawn
-
+                draw_dev_cards = check_dev_card_clicked(x_cord, y_cord)
         if drew_settlement:
             draw_starting_settlements = False
 
-        draw_board(board1, player1, draw_starting_settlements, settlements_placed, total, True)
+        draw_board(board1, player1, draw_starting_settlements, settlements_placed, total, draw_dev_cards)
     # print(pos)
     pygame.quit()
 
