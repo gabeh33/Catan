@@ -435,7 +435,14 @@ def check_starting_settlement_placed(x_cord, y_cord):
         if math.hypot(pos[0] - x_cord, pos[1] - y_cord) <= settlement_circle_size:
             settlements_placed.append(pos)
             legal_settlement_pos.remove(pos)
-            # TODO remove the 2 or 3 adjacent settlements from legal_settlement_pos too
+            # To remove any adjacent spots from the legal settlement positions, form a circle around the settlement
+            # chosen with a radius of 54
+            remove_list = []
+            for settlement_pos in legal_settlement_pos:
+                if get_distance(pos[0], pos[1], settlement_pos[0], settlement_pos[1]) <= 62:
+                    remove_list.append(settlement_pos)
+            for entry in remove_list:
+                legal_settlement_pos.remove(entry)
             WIN.blit(red_settlement, (pos[0], pos[1]))
             return True
     return False
@@ -508,8 +515,8 @@ def main():
                 # Check if the resource card was clicked, and if it was indicate that the dev card display
                 # should be drawn
                 draw_dev_cards = check_dev_card_clicked(x_cord, y_cord)
-        if drew_settlement:
-            draw_starting_settlements = False
+        #if drew_settlement:
+            #draw_starting_settlements = False
 
         draw_board(board1, player1, draw_starting_settlements, settlements_placed, total, draw_dev_cards)
     # print(pos)
