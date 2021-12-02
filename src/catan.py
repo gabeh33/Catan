@@ -56,6 +56,7 @@ legal_settlement_pos = [(320, 36), (415, 35), (516, 35), (273, 61), (368, 62), (
                         (612, 312), (221, 365), (320, 365), (417, 366), (513, 366), (612, 367),
                         (269, 394), (367, 393), (467, 391), (562, 394), (270, 449), (369, 448),
                         (466, 449), (564, 449), (319, 477), (417, 477), (513, 477)]
+# Radius of the circle that represents a settlement
 settlement_circle_size = 10
 settlements_placed = []
 SETTLEMENT_WIDTH = 15
@@ -73,42 +74,38 @@ number_tile_pos = [(321, 89), (419, 88), (509, 87), (270, 173), (367, 176), (467
                    (465, 340), (566, 340), (320, 422), (422, 421), (519, 420)]
 
 
-def place_starting_settlement():
-    # Draws circles where any starting settlement can be placed, and then waits for a choice from the player
-    for pos in legal_settlement_pos:
-        pygame.draw.circle(WIN, GRAY, (pos[0], pos[1]), settlement_circle_size)
+class View:
+    def __init__(self, board, player):
+        self.board = board
+        self.player = player
 
+    # Displays the total rolled from the dice
+    def draw_total_rolled(self, total):
+        font = pygame.font.Font('freesansbold.ttf', 18)
+        roll_dice = font.render(str(total), True, BLACK, GREEN)
+        dice_small_rect = roll_dice.get_bounding_rect()
+        dice_small_rect.center = (60, 30)
+        WIN.blit(roll_dice, dice_small_rect)
 
-# Displays the total rolled from the dice
-def draw_total_rolled(total):
-    font = pygame.font.Font('freesansbold.ttf', 18)
-    roll_dice = font.render(str(total), True, BLACK, GREEN)
-    dice_small_rect = roll_dice.get_bounding_rect()
-    dice_small_rect.center = (60, 30)
-    WIN.blit(roll_dice, dice_small_rect)
+    # Renders all of the info
+    def draw_board(self, place_settlements, settlements_placed, total, dev_card_display):
+        WIN.fill(BLUE)
+        self.board.draw_board()
+        self.player.draw_hand()
 
+        if place_settlements:
+            # Draws circles where any starting settlement can be placed, and then waits for a choice from the player
+            for pos in legal_settlement_pos:
+                pygame.draw.circle(WIN, GRAY, (pos[0], pos[1]), settlement_circle_size)
+        for pos in settlements_placed:
+            pygame.draw.circle(WIN, RED, (pos[0], pos[1]), settlement_circle_size)
 
-def draw_dev_card_display(player):
-    pass
+        self.draw_total_rolled(total)
 
+        if dev_card_display:
+            self.player.draw_dev_display()
 
-# Renders all of the info
-def draw_board(board, player, place_settlements, settlements_placed, total, dev_card_display):
-    WIN.fill(BLUE)
-    board.draw_board()
-    player.draw_hand()
-
-    if place_settlements:
-        place_starting_settlement()
-    for pos in settlements_placed:
-        pygame.draw.circle(WIN, RED, (pos[0], pos[1]), settlement_circle_size)
-
-    draw_total_rolled(total)
-
-    if dev_card_display:
-        player.draw_dev_display()
-
-    pygame.display.update()
+        pygame.display.update()
 
 
 # Class that deals with the board itself, including drawing the tiles and keeping track of what numbers
@@ -428,68 +425,74 @@ class Player:
             WIN.blit(card, ((i + 3) * horizontal_buffer + i * card.get_width(), starting_y + vertical_buffer - 150))
 
 
-# Checks if the coordinates are a valid settlement position
-# If it is draws a red circle and returns True, False otherwise
-def check_starting_settlement_placed(x_cord, y_cord):
-    for pos in legal_settlement_pos:
-        if math.hypot(pos[0] - x_cord, pos[1] - y_cord) <= settlement_circle_size:
-            settlements_placed.append(pos)
-            legal_settlement_pos.remove(pos)
-            # To remove any adjacent spots from the legal settlement positions, form a circle around the settlement
-            # chosen with a radius of 54
-            remove_list = []
-            for settlement_pos in legal_settlement_pos:
-                if get_distance(pos[0], pos[1], settlement_pos[0], settlement_pos[1]) <= 62:
-                    remove_list.append(settlement_pos)
-            for entry in remove_list:
-                legal_settlement_pos.remove(entry)
-            WIN.blit(red_settlement, (pos[0], pos[1]))
-            return True
-    return False
+class Controller:
+    def __init__(self, board, player):
+        self.board = board
+        self.player = player
 
+    # Checks if the coordinates are a valid settlement position
+    # If it is draws a red circle and returns True, False otherwise
+    def check_starting_settlement_placed(self, x_cord, y_cord):
+        for pos in legal_settlement_pos:
+            if math.hypot(pos[0] - x_cord, pos[1] - y_cord) <= settlement_circle_size:
+                settlements_placed.append(pos)
+                legal_settlement_pos.remove(pos)
+                # To remove any adjacent spots from the legal settlement positions, form a circle around the settlement
+                # chosen with a radius of 54
+                remove_list = []
+                for settlement_pos in legal_settlement_pos:
+                    if self.get_distance(pos[0], pos[1], settlement_pos[0], settlement_pos[1]) <= 62:
+                        remove_list.append(settlement_pos)
+                for entry in remove_list:
+                    legal_settlement_pos.remove(entry)
+                WIN.blit(red_settlement, (pos[0], pos[1]))
+                return True
+        return False
 
-def check_roll_dice_clicked_and_roll(x_cord, y_cord, board, player):
-    if WIDTH - 100 <= x_cord <= WIDTH - 17 and HEIGHT - 36 <= y_cord <= HEIGHT - 21:
-        return roll_dice_and_distribute(board, player)
+    def check_roll_dice_clicked_and_roll(self, x_cord, y_cord):
+        if WIDTH - 100 <= x_cord <= WIDTH - 17 and HEIGHT - 36 <= y_cord <= HEIGHT - 21:
+            return self.roll_dice_and_distribute()
 
+    def get_distance(self, x1, y1, x2, y2):
+        asq = (x1 - x2) ** 2
+        bsq = (y1 - y2) ** 2
+        return math.sqrt(asq + bsq)
 
-def get_distance(x1, y1, x2, y2):
-    asq = (x1 - x2) ** 2
-    bsq = (y1 - y2) ** 2
-    return math.sqrt(asq + bsq)
+    def roll_dice_and_distribute(self):
+        num1 = random.randint(1, 6)
+        num2 = random.randint(1, 6)
+        total = num1 + num2
+        if total == 7:
+            return 7
 
+        # List of tuples that contain ((x_cord, y_cord), resource_tile)
+        mapping = self.board.get_number_to_pos_and_resource_mapping()
+        lst = mapping[total]
+        circle_radius = 76.02
+        for entry in lst:
+            if entry[1] != "DESERT":
+                for settlement_pos in settlements_placed:
+                    if self.get_distance(settlement_pos[0], settlement_pos[1], entry[0][0],
+                                         entry[0][1]) <= circle_radius:
+                        self.player.update_resources(entry[1])
+        return total
 
-def roll_dice_and_distribute(board, player):
-    num1 = random.randint(1, 6)
-    num2 = random.randint(1, 6)
-    total = num1 + num2
-    if total == 7:
-        return 7
-
-    # List of tuples that contain ((x_cord, y_cord), resource_tile)
-    mapping = board.get_number_to_pos_and_resource_mapping()
-    lst = mapping[total]
-    circle_radius = 76.02
-    for entry in lst:
-        if entry[1] != "DESERT":
-            for settlement_pos in settlements_placed:
-                if get_distance(settlement_pos[0], settlement_pos[1], entry[0][0], entry[0][1]) <= circle_radius:
-                    player.update_resources(entry[1])
-    return total
-
-
-# Returns True of the coordinates passed are within the development card
-# displayed at the bottom of the screen, False otherwise
-def check_dev_card_clicked(x_cord, y_cord):
-    # boundaries are 20 + 120 + 10 = 150
-    #                 510 + 80 + 5 = 595
-    # then 210, 675
-    return 150 <= x_cord <= 210 and 595 <= y_cord <= 675
+    # Returns True of the coordinates passed are within the development card
+    # displayed at the bottom of the screen, False otherwise
+    def check_dev_card_clicked(self, x_cord, y_cord):
+        # boundaries are 20 + 120 + 10 = 150
+        #                 510 + 80 + 5 = 595
+        # then 210, 675
+        return 150 <= x_cord <= 210 and 595 <= y_cord <= 675
 
 
 def main():
     board1 = Board()
     player1 = Player()
+
+    view1 = View(board1, player1)
+
+    controller1 = Controller(board1, player1)
     drew_settlement = False
     draw_starting_settlements = True
     draw_dev_cards = False
@@ -507,18 +510,18 @@ def main():
 
                 # Check if a settlement was placed, and if it was don't draw the possible positions
                 # that a settlement can be placed
-                drew_settlement = check_starting_settlement_placed(x_cord, y_cord)
+                drew_settlement = controller1.check_starting_settlement_placed(x_cord, y_cord)
 
                 # Check if the roll dice button was pressed, and if it was distribute the appropriate resources
-                total = check_roll_dice_clicked_and_roll(x_cord, y_cord, board1, player1)
+                total = controller1.check_roll_dice_clicked_and_roll(x_cord, y_cord, board1, player1)
 
                 # Check if the resource card was clicked, and if it was indicate that the dev card display
                 # should be drawn
-                draw_dev_cards = check_dev_card_clicked(x_cord, y_cord)
-        #if drew_settlement:
-            #draw_starting_settlements = False
+                draw_dev_cards = controller1.check_dev_card_clicked(x_cord, y_cord)
+        # if drew_settlement:
+        # draw_starting_settlements = False
 
-        draw_board(board1, player1, draw_starting_settlements, settlements_placed, total, draw_dev_cards)
+        view1.draw_board(draw_starting_settlements, settlements_placed, total, draw_dev_cards)
     # print(pos)
     pygame.quit()
 
