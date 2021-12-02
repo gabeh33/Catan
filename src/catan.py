@@ -58,7 +58,6 @@ legal_settlement_pos = [(320, 36), (415, 35), (516, 35), (273, 61), (368, 62), (
                         (466, 449), (564, 449), (319, 477), (417, 477), (513, 477)]
 # Radius of the circle that represents a settlement
 settlement_circle_size = 10
-settlements_placed = []
 SETTLEMENT_WIDTH = 15
 SETTLEMENT_HEIGHT = 15
 
@@ -72,40 +71,6 @@ red_settlement = pygame.transform.scale(red_settlement, (SETTLEMENT_WIDTH, SETTL
 number_tile_pos = [(321, 89), (419, 88), (509, 87), (270, 173), (367, 176), (467, 172), (564, 173),
                    (219, 256), (322, 253), (417, 251), (517, 254), (610, 252), (270, 340), (365, 339),
                    (465, 340), (566, 340), (320, 422), (422, 421), (519, 420)]
-
-
-class View:
-    def __init__(self, board, player):
-        self.board = board
-        self.player = player
-
-    # Displays the total rolled from the dice
-    def draw_total_rolled(self, total):
-        font = pygame.font.Font('freesansbold.ttf', 18)
-        roll_dice = font.render(str(total), True, BLACK, GREEN)
-        dice_small_rect = roll_dice.get_bounding_rect()
-        dice_small_rect.center = (60, 30)
-        WIN.blit(roll_dice, dice_small_rect)
-
-    # Renders all of the info
-    def draw_board(self, place_settlements, settlements_placed, total, dev_card_display):
-        WIN.fill(BLUE)
-        self.board.draw_board()
-        self.player.draw_hand()
-
-        if place_settlements:
-            # Draws circles where any starting settlement can be placed, and then waits for a choice from the player
-            for pos in legal_settlement_pos:
-                pygame.draw.circle(WIN, GRAY, (pos[0], pos[1]), settlement_circle_size)
-        for pos in settlements_placed:
-            pygame.draw.circle(WIN, RED, (pos[0], pos[1]), settlement_circle_size)
-
-        self.draw_total_rolled(total)
-
-        if dev_card_display:
-            self.player.draw_dev_display()
-
-        pygame.display.update()
 
 
 # Class that deals with the board itself, including drawing the tiles and keeping track of what numbers
@@ -264,7 +229,7 @@ class Board:
 
 
 class Player:
-    def __init__(self, is_bot=False):
+    def __init__(self):
         self.brick = 0
         self.wheat = 0
         self.wood = 0
@@ -278,8 +243,6 @@ class Player:
         self.resource_cards = []
         self.init_resource_cards()
 
-        self.isBot = is_bot
-
         self.max_roads = 15
         self.max_cities = 4
         self.max_settlements = 5
@@ -290,6 +253,14 @@ class Player:
         self.year_of_plenty = 0
         self.monopoly = 0
         self.dev_cards = []
+
+        self.settlements_placed = []
+
+        # All the info about what the player is currently doing, such as placing settlements
+        # or the development card panel being open
+        self.placing_settlement = True
+        self.dev_card_display_open = False
+        self.last_total_rolled = -1
 
     def init_resource_cards(self):
         card_names = ['brick', 'wood', 'ore', 'sheep', 'wheat']
@@ -425,35 +396,122 @@ class Player:
             WIN.blit(card, ((i + 3) * horizontal_buffer + i * card.get_width(), starting_y + vertical_buffer - 150))
 
 
+class Bot(Player):
+    def __init__(self):
+        super().__init__()
+
+    # Method for the bot to choose a position to put a settlement
+    # TODO make the bot placing settlements smarter than random
+    def place_settlement(self):
+        choice = random.choice(legal_settlement_pos)
+        self.settlements_placed.append(choice)
+
+        # Remove the position chosen and the adjacent positions from legal_settlement_pos
+        legal_settlement_pos.remove(choice)
+        remove_list = []
+        for settlement_pos in legal_settlement_pos:
+            if self.get_distance(choice[0], choice[1], settlement_pos[0], settlement_pos[1]) <= 62:
+                remove_list.append(settlement_pos)
+        for entry in remove_list:
+            legal_settlement_pos.remove(entry)
+
+        # Now draw the settlement that was chosen
+
+    @staticmethod
+    def get_distance(x1, y1, x2, y2):
+        asq = (x1 - x2) ** 2
+        bsq = (y1 - y2) ** 2
+        return math.sqrt(asq + bsq)
+
+
+class View:
+    def __init__(self, board, player: Player, bot: Bot):
+        self.board = board
+        self.player = player
+        self.bot = bot
+
+    # Displays the total rolled from the dice
+    @staticmethod
+    def draw_total_rolled(total):
+        font = pygame.font.Font('freesansbold.ttf', 18)
+        roll_dice = font.render(str(total), True, BLACK, GREEN)
+        dice_small_rect = roll_dice.get_bounding_rect()
+        dice_small_rect.center = (60, 30)
+        WIN.blit(roll_dice, dice_small_rect)
+
+    # Renders all of the info
+    def draw_board(self):
+        WIN.fill(BLUE)
+        self.board.draw_board()
+        self.player.draw_hand()
+
+        if self.player.placing_settlement:
+            # Draws circles where any starting settlement can be placed, and then waits for a choice from the player
+            for pos in legal_settlement_pos:
+                pygame.draw.circle(WIN, GRAY, (pos[0], pos[1]), settlement_circle_size)
+        for pos in self.player.settlements_placed:
+            pygame.draw.circle(WIN, RED, (pos[0], pos[1]), settlement_circle_size)
+        for pos in self.bot.settlements_placed:
+            pygame.draw.circle(WIN, GREEN, (pos[0], pos[1]), settlement_circle_size)
+
+        self.draw_total_rolled(self.player.last_total_rolled)
+
+        if self.player.dev_card_display_open:
+            self.player.draw_dev_display()
+
+        pygame.display.update()
+
+
+# Any methods that have to deal with a user clicking
 class Controller:
-    def __init__(self, board, player):
+    def __init__(self, board: Board, player: Player):
         self.board = board
         self.player = player
 
+    def handle_click(self, x_cord, y_cord):
+        # Handle the case where the legal settlement positions are drawn
+        if self.player.placing_settlement:
+            # The player is placing a settlement, so check if that click was a legal position
+            if self.check_settlement_placed(x_cord, y_cord):
+                self.player.placing_settlement = False
+        # Handle the case where the development cards are not open
+        if not self.player.dev_card_display_open:
+            if self.check_dev_card_clicked(x_cord, y_cord):
+                self.player.dev_card_display_open = True
+        # Handle the case where the development cards are open
+        if self.player.dev_card_display_open:
+            if not self.check_dev_card_clicked(x_cord, y_cord):
+                self.player.dev_card_display_open = False
+
+        dice_roll = self.check_roll_dice_clicked_and_roll(x_cord, y_cord)
+        if dice_roll:
+            self.player.last_total_rolled = dice_roll
+
     # Checks if the coordinates are a valid settlement position
     # If it is draws a red circle and returns True, False otherwise
-    def check_starting_settlement_placed(self, x_cord, y_cord):
+    def check_settlement_placed(self, x_cord, y_cord):
         for pos in legal_settlement_pos:
             if math.hypot(pos[0] - x_cord, pos[1] - y_cord) <= settlement_circle_size:
-                settlements_placed.append(pos)
+                self.player.settlements_placed.append(pos)
                 legal_settlement_pos.remove(pos)
                 # To remove any adjacent spots from the legal settlement positions, form a circle around the settlement
-                # chosen with a radius of 54
+                # chosen with a radius of 62
                 remove_list = []
                 for settlement_pos in legal_settlement_pos:
                     if self.get_distance(pos[0], pos[1], settlement_pos[0], settlement_pos[1]) <= 62:
                         remove_list.append(settlement_pos)
                 for entry in remove_list:
                     legal_settlement_pos.remove(entry)
-                WIN.blit(red_settlement, (pos[0], pos[1]))
                 return True
         return False
 
     def check_roll_dice_clicked_and_roll(self, x_cord, y_cord):
         if WIDTH - 100 <= x_cord <= WIDTH - 17 and HEIGHT - 36 <= y_cord <= HEIGHT - 21:
             return self.roll_dice_and_distribute()
+        return False
 
-    def get_distance(self, x1, y1, x2, y2):
+    @staticmethod
+    def get_distance(x1, y1, x2, y2):
         asq = (x1 - x2) ** 2
         bsq = (y1 - y2) ** 2
         return math.sqrt(asq + bsq)
@@ -471,7 +529,7 @@ class Controller:
         circle_radius = 76.02
         for entry in lst:
             if entry[1] != "DESERT":
-                for settlement_pos in settlements_placed:
+                for settlement_pos in self.player.settlements_placed:
                     if self.get_distance(settlement_pos[0], settlement_pos[1], entry[0][0],
                                          entry[0][1]) <= circle_radius:
                         self.player.update_resources(entry[1])
@@ -479,50 +537,62 @@ class Controller:
 
     # Returns True of the coordinates passed are within the development card
     # displayed at the bottom of the screen, False otherwise
-    def check_dev_card_clicked(self, x_cord, y_cord):
+    @staticmethod
+    def check_dev_card_clicked(x_cord, y_cord):
         # boundaries are 20 + 120 + 10 = 150
         #                 510 + 80 + 5 = 595
         # then 210, 675
         return 150 <= x_cord <= 210 and 595 <= y_cord <= 675
 
 
+class TestController(Controller):
+    def __init__(self, board: Board, player: Player, bot1: Bot):
+        super().__init__(board, player)
+        self.bot1 = bot1
+
+    def handle_click(self, x_cord, y_cord):
+        # Handle the case where the legal settlement positions are drawn
+        if self.player.placing_settlement:
+            # The player is placing a settlement, so check if that click was a legal position
+            if self.check_settlement_placed(x_cord, y_cord):
+                self.player.placing_settlement = True
+                self.bot1.place_settlement()
+        # Handle the case where the development cards are not open
+        if not self.player.dev_card_display_open:
+            if self.check_dev_card_clicked(x_cord, y_cord):
+                self.player.dev_card_display_open = True
+        # Handle the case where the development cards are open
+        if self.player.dev_card_display_open:
+            if not self.check_dev_card_clicked(x_cord, y_cord):
+                self.player.dev_card_display_open = False
+
+        dice_roll = self.check_roll_dice_clicked_and_roll(x_cord, y_cord)
+        if dice_roll:
+            self.player.last_total_rolled = dice_roll
+
+
 def main():
     board1 = Board()
     player1 = Player()
+    bot1 = Bot()
 
-    view1 = View(board1, player1)
+    view1 = View(board1, player1, bot1)
 
     controller1 = Controller(board1, player1)
-    drew_settlement = False
-    draw_starting_settlements = True
-    draw_dev_cards = False
-    pos = []
+    # Controller used for creating the game, does not obey all the rules
+    # just for convenience
+    test_controller1 = TestController(board1, player1, bot1)
+
     run = True
-    total = -1
     while run:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
             if event.type == pygame.MOUSEBUTTONUP:
                 x_cord, y_cord = pygame.mouse.get_pos()
-                print(str(x_cord) + " " + str(y_cord))
-                # pos.append((x_cord, y_cord))
+                test_controller1.handle_click(x_cord, y_cord)
 
-                # Check if a settlement was placed, and if it was don't draw the possible positions
-                # that a settlement can be placed
-                drew_settlement = controller1.check_starting_settlement_placed(x_cord, y_cord)
-
-                # Check if the roll dice button was pressed, and if it was distribute the appropriate resources
-                total = controller1.check_roll_dice_clicked_and_roll(x_cord, y_cord, board1, player1)
-
-                # Check if the resource card was clicked, and if it was indicate that the dev card display
-                # should be drawn
-                draw_dev_cards = controller1.check_dev_card_clicked(x_cord, y_cord)
-        # if drew_settlement:
-        # draw_starting_settlements = False
-
-        view1.draw_board(draw_starting_settlements, settlements_placed, total, draw_dev_cards)
-    # print(pos)
+        view1.draw_board()
     pygame.quit()
 
 
