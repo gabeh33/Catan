@@ -56,6 +56,60 @@ legal_settlement_pos = [(320, 36), (415, 35), (516, 35), (273, 61), (368, 62), (
                         (612, 312), (221, 365), (320, 365), (417, 366), (513, 366), (612, 367),
                         (269, 394), (367, 393), (467, 391), (562, 394), (270, 449), (369, 448),
                         (466, 449), (564, 449), (319, 477), (417, 477), (513, 477)]
+
+# List of all settlement positions. This will not shrink, used to create the legal road positions
+all_settlement_pos = [(320, 36), (415, 35), (516, 35), (273, 61), (368, 62), (466, 62), (563, 62),
+                      (272, 117), (364, 118), (466, 116), (564, 116), (224, 144), (317, 144),
+                      (414, 147), (515, 146), (613, 146), (221, 200), (320, 200), (416, 202),
+                      (515, 201), (613, 200), (171, 231), (270, 227), (368, 231), (465, 228),
+                      (561, 229), (661, 228), (172, 282), (267, 282), (366, 283), (464, 283),
+                      (562, 283), (661, 283), (221, 311), (318, 310), (415, 312), (512, 311),
+                      (612, 312), (221, 365), (320, 365), (417, 366), (513, 366), (612, 367),
+                      (269, 394), (367, 393), (467, 391), (562, 394), (270, 449), (369, 448),
+                      (466, 449), (564, 449), (319, 477), (417, 477), (513, 477)]
+all_road_positions = []
+for i, settlement_pos in enumerate(all_settlement_pos):
+    if 0 <= i <= 2:
+        all_road_positions.append((settlement_pos, all_settlement_pos[i + 3]))
+        all_road_positions.append((settlement_pos, all_settlement_pos[i + 4]))
+    if 3 <= i <= 6:
+        all_road_positions.append((settlement_pos, all_settlement_pos[i + 4]))
+    if 7 <= i <= 10:
+        all_road_positions.append((settlement_pos, all_settlement_pos[i + 4]))
+        all_road_positions.append((settlement_pos, all_settlement_pos[i + 5]))
+    if 11 <= i <= 15:
+        all_road_positions.append((settlement_pos, all_settlement_pos[i + 5]))
+    if 16 <= i <= 20:
+        all_road_positions.append((settlement_pos, all_settlement_pos[i + 5]))
+        all_road_positions.append((settlement_pos, all_settlement_pos[i + 6]))
+    if 21 <= i <= 26:
+        all_road_positions.append((settlement_pos, all_settlement_pos[i + 6]))
+    if i == 27:
+        all_road_positions.append((settlement_pos, all_settlement_pos[33]))
+    if 28 <= i <= 31:
+        all_road_positions.append((settlement_pos, all_settlement_pos[i + 5]))
+        all_road_positions.append((settlement_pos, all_settlement_pos[i + 6]))
+    if i == 32:
+        all_road_positions.append((settlement_pos, all_settlement_pos[37]))
+    if 33 <= i <= 37:
+        all_road_positions.append((settlement_pos, all_settlement_pos[i + 5]))
+    if i == 38:
+        all_road_positions.append((settlement_pos, all_settlement_pos[43]))
+    if 39 <= i <= 41:
+        all_road_positions.append((settlement_pos, all_settlement_pos[i + 4]))
+        all_road_positions.append((settlement_pos, all_settlement_pos[i + 5]))
+    if i == 42:
+        all_road_positions.append((settlement_pos, all_settlement_pos[46]))
+    if 43 <= i <= 46:
+        all_road_positions.append((settlement_pos, all_settlement_pos[i + 4]))
+    if i == 47:
+        all_road_positions.append((settlement_pos, all_settlement_pos[51]))
+    if 48 <= i <= 49:
+        all_road_positions.append((settlement_pos, all_settlement_pos[i + 3]))
+        all_road_positions.append((settlement_pos, all_settlement_pos[i + 4]))
+    if i == 50:
+        all_road_positions.append((settlement_pos, all_settlement_pos[53]))
+
 # Radius of the circle that represents a settlement
 settlement_circle_size = 10
 SETTLEMENT_WIDTH = 15
@@ -98,6 +152,9 @@ class Board:
 
         self.number_tiles = []
         self.init_number_tile_pics()
+
+        self.game_started = False
+        self.message_to_post = "Start Game!"
 
     def init_number_tile_pics(self):
         for i in range(2, 13):
@@ -258,7 +315,7 @@ class Player:
 
         # All the info about what the player is currently doing, such as placing settlements
         # or the development card panel being open
-        self.placing_settlement = True
+        self.placing_settlement = False
         self.dev_card_display_open = False
         self.last_total_rolled = -1
 
@@ -436,8 +493,28 @@ class View:
         font = pygame.font.Font('freesansbold.ttf', 18)
         roll_dice = font.render(str(total), True, BLACK, GREEN)
         dice_small_rect = roll_dice.get_bounding_rect()
-        dice_small_rect.center = (60, 30)
+        dice_small_rect.center = (WIDTH - 58, HEIGHT - 55)
+
         WIN.blit(roll_dice, dice_small_rect)
+
+    def draw_message_and_display(self):
+        # Draws the message that the board wants to display
+        rect = pygame.Rect(WIDTH - 130, HEIGHT - 180, 125, 50)
+        pygame.draw.rect(WIN, WHITE, rect)
+        font = pygame.font.Font('freesansbold.ttf', 18)
+        test_to_render = font.render(self.board.message_to_post, True, BLACK, WHITE)
+        text_rect = test_to_render.get_bounding_rect()
+        if len(self.board.message_to_post) <= 12:
+            text_rect.center = rect.center
+        else:
+            text_rect.center = (rect.center[0], HEIGHT - 180)
+        WIN.blit(test_to_render, text_rect)
+
+    def draw_legal_road_positions(self):
+        for entry in all_road_positions:
+            p1 = entry[0]
+            p2 = entry[1]
+            pygame.draw.line(WIN, RED, p1, p2, width=7)
 
     # Renders all of the info
     def draw_board(self):
@@ -456,6 +533,10 @@ class View:
 
         self.draw_total_rolled(self.player.last_total_rolled)
 
+        self.draw_message_and_display()
+
+        self.draw_legal_road_positions()
+
         if self.player.dev_card_display_open:
             self.player.draw_dev_display()
 
@@ -464,24 +545,34 @@ class View:
 
 # Any methods that have to deal with a user clicking
 class Controller:
-    def __init__(self, board: Board, player: Player):
+    def __init__(self, board: Board, player: Player, bot: Bot()):
         self.board = board
         self.player = player
+        self.bot = bot
 
     def handle_click(self, x_cord, y_cord):
+        # If the start game button hasn't been pressed, only check for that
+        if not self.board.game_started:
+            # The game hasn't started, so need to check if the start game button is pressed, ignoring everything else
+            self.board.game_started = self.check_start_game_clicked(x_cord, y_cord)
+            if self.board.game_started:
+                self.player.placing_settlement = True
+            return
+        # Handle the case where the development cards are open
+        if self.player.dev_card_display_open:
+            if not self.check_dev_card_clicked(x_cord, y_cord):
+                self.player.dev_card_display_open = False
+                return
         # Handle the case where the legal settlement positions are drawn
         if self.player.placing_settlement:
             # The player is placing a settlement, so check if that click was a legal position
             if self.check_settlement_placed(x_cord, y_cord):
                 self.player.placing_settlement = False
+                self.bot.place_settlement()
         # Handle the case where the development cards are not open
         if not self.player.dev_card_display_open:
             if self.check_dev_card_clicked(x_cord, y_cord):
                 self.player.dev_card_display_open = True
-        # Handle the case where the development cards are open
-        if self.player.dev_card_display_open:
-            if not self.check_dev_card_clicked(x_cord, y_cord):
-                self.player.dev_card_display_open = False
 
         dice_roll = self.check_roll_dice_clicked_and_roll(x_cord, y_cord)
         if dice_roll:
@@ -544,11 +635,14 @@ class Controller:
         # then 210, 675
         return 150 <= x_cord <= 210 and 595 <= y_cord <= 675
 
+    @staticmethod
+    def check_start_game_clicked(x_cord, y_cord):
+        return WIDTH - 130 <= x_cord <= WIDTH - 5 and HEIGHT - 180 <= y_cord <= HEIGHT - 130
+
 
 class TestController(Controller):
-    def __init__(self, board: Board, player: Player, bot1: Bot):
-        super().__init__(board, player)
-        self.bot1 = bot1
+    def __init__(self, board: Board, player: Player, bot: Bot):
+        super().__init__(board, player, bot)
 
     def handle_click(self, x_cord, y_cord):
         # Handle the case where the legal settlement positions are drawn
@@ -556,7 +650,7 @@ class TestController(Controller):
             # The player is placing a settlement, so check if that click was a legal position
             if self.check_settlement_placed(x_cord, y_cord):
                 self.player.placing_settlement = True
-                self.bot1.place_settlement()
+                self.bot.place_settlement()
         # Handle the case where the development cards are not open
         if not self.player.dev_card_display_open:
             if self.check_dev_card_clicked(x_cord, y_cord):
@@ -578,7 +672,7 @@ def main():
 
     view1 = View(board1, player1, bot1)
 
-    controller1 = Controller(board1, player1)
+    controller1 = Controller(board1, player1, bot1)
     # Controller used for creating the game, does not obey all the rules
     # just for convenience
     test_controller1 = TestController(board1, player1, bot1)
@@ -590,7 +684,7 @@ def main():
                 run = False
             if event.type == pygame.MOUSEBUTTONUP:
                 x_cord, y_cord = pygame.mouse.get_pos()
-                test_controller1.handle_click(x_cord, y_cord)
+                controller1.handle_click(x_cord, y_cord)
 
         view1.draw_board()
     pygame.quit()
