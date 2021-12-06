@@ -648,6 +648,7 @@ class Controller:
             if self.check_road_box_clicked(x_cord, y_cord):
                 self.player.placing_roads = False
 
+
         dice_roll = self.check_roll_dice_clicked_and_roll(x_cord, y_cord)
         if dice_roll:
             self.player.last_total_rolled = dice_roll
