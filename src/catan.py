@@ -67,48 +67,82 @@ all_settlement_pos = [(320, 36), (415, 35), (516, 35), (273, 61), (368, 62), (46
                       (612, 312), (221, 365), (320, 365), (417, 366), (513, 366), (612, 367),
                       (269, 394), (367, 393), (467, 391), (562, 394), (270, 449), (369, 448),
                       (466, 449), (564, 449), (319, 477), (417, 477), (513, 477)]
+
 all_road_positions = []
+all_road_boxes = []
+
+
+class MathFunc:
+    @staticmethod
+    def midpoint(p1: list, p2: list):
+        return ((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2)
+
+
+math_func = MathFunc()
 for i, settlement_pos in enumerate(all_settlement_pos):
     if 0 <= i <= 2:
         all_road_positions.append((settlement_pos, all_settlement_pos[i + 3]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[i + 3]))
         all_road_positions.append((settlement_pos, all_settlement_pos[i + 4]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[i + 4]))
     if 3 <= i <= 6:
         all_road_positions.append((settlement_pos, all_settlement_pos[i + 4]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[i + 4]))
     if 7 <= i <= 10:
         all_road_positions.append((settlement_pos, all_settlement_pos[i + 4]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[i + 4]))
         all_road_positions.append((settlement_pos, all_settlement_pos[i + 5]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[i + 5]))
     if 11 <= i <= 15:
         all_road_positions.append((settlement_pos, all_settlement_pos[i + 5]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[i + 5]))
     if 16 <= i <= 20:
         all_road_positions.append((settlement_pos, all_settlement_pos[i + 5]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[i + 5]))
         all_road_positions.append((settlement_pos, all_settlement_pos[i + 6]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[i + 6]))
     if 21 <= i <= 26:
         all_road_positions.append((settlement_pos, all_settlement_pos[i + 6]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[i + 6]))
     if i == 27:
         all_road_positions.append((settlement_pos, all_settlement_pos[33]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[33]))
     if 28 <= i <= 31:
         all_road_positions.append((settlement_pos, all_settlement_pos[i + 5]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[i + 5]))
         all_road_positions.append((settlement_pos, all_settlement_pos[i + 6]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[i + 6]))
     if i == 32:
         all_road_positions.append((settlement_pos, all_settlement_pos[37]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[37]))
     if 33 <= i <= 37:
         all_road_positions.append((settlement_pos, all_settlement_pos[i + 5]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[i + 5]))
     if i == 38:
         all_road_positions.append((settlement_pos, all_settlement_pos[43]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[43]))
     if 39 <= i <= 41:
         all_road_positions.append((settlement_pos, all_settlement_pos[i + 4]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[i + 4]))
         all_road_positions.append((settlement_pos, all_settlement_pos[i + 5]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[i + 5]))
     if i == 42:
         all_road_positions.append((settlement_pos, all_settlement_pos[46]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[46]))
     if 43 <= i <= 46:
         all_road_positions.append((settlement_pos, all_settlement_pos[i + 4]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[i + 4]))
     if i == 47:
         all_road_positions.append((settlement_pos, all_settlement_pos[51]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[51]))
     if 48 <= i <= 49:
         all_road_positions.append((settlement_pos, all_settlement_pos[i + 3]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[i + 3]))
         all_road_positions.append((settlement_pos, all_settlement_pos[i + 4]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[i + 4]))
     if i == 50:
         all_road_positions.append((settlement_pos, all_settlement_pos[53]))
+        all_road_boxes.append(math_func.midpoint(settlement_pos, all_settlement_pos[53]))
 
 # Radius of the circle that represents a settlement
 settlement_circle_size = 10
@@ -311,13 +345,21 @@ class Player:
         self.monopoly = 0
         self.dev_cards = []
 
+        # Tuples containing x and y coordinates of the settlements that this player placed
         self.settlements_placed = []
+        # Tuples containing tuples of x and y coordinates of the roads that this player placed
+        self.roads_placed = []
+        # Tuples containing tuples of x and y coordinates of the places where the player can place roads
+        self.legal_road_pos = []
+        # Tuples containing tuples of x and y coordinates of the hitboxes of the legal road positions
+        self.legal_road_boxes = []
 
         # All the info about what the player is currently doing, such as placing settlements
         # or the development card panel being open
         self.placing_settlement = False
         self.dev_card_display_open = False
         self.last_total_rolled = -1
+        self.placing_roads = False
 
     def init_resource_cards(self):
         card_names = ['brick', 'wood', 'ore', 'sheep', 'wheat']
@@ -327,7 +369,6 @@ class Player:
             self.resource_cards.append(pygame.transform.scale(card, (self.card_width, self.card_height)))
 
     def update_resources(self, resource_string):
-        print(F"Resource massed = {resource_string}")
         if resource_string == "WHEAT":
             self.wheat += 1
         elif resource_string == "BRICK":
@@ -352,6 +393,17 @@ class Player:
 
     def can_buy_dev_card(self):
         return self.sheep and self.wheat and self.ore
+
+    # pos is a tuple of x,y coordinates. This will update the settlements_placed array
+    # and update the legal_road_positions to reflect where the player can place roads
+    def place_settlement_update_roads(self, settlement_pos):
+        self.settlements_placed.append(settlement_pos)
+        for road_pos in all_road_positions:
+            if road_pos not in self.legal_road_pos and \
+                    (road_pos[0] == settlement_pos or road_pos[1] == settlement_pos):
+                self.legal_road_pos.append(road_pos)
+        for road_pos in self.legal_road_pos:
+            self.legal_road_boxes.append((math_func.midpoint(road_pos[0], road_pos[1]), road_pos))
 
     # Draws all the information about a players hand, including how many of each resource they have
     # how many and what development cards they have, their victory points,
@@ -511,7 +563,17 @@ class View:
         WIN.blit(test_to_render, text_rect)
 
     def draw_legal_road_positions(self):
-        for entry in all_road_positions:
+        for entry in self.player.legal_road_pos:
+            p1 = entry[0]
+            p2 = entry[1]
+            pygame.draw.line(WIN, RED, p1, p2, width=7)
+
+    def draw_road_boxes(self):
+        for pos in self.player.legal_road_boxes:
+            pygame.draw.circle(WIN, GRAY, (pos[0][0], pos[0][1]), settlement_circle_size)
+
+    def draw_roads_placed(self):
+        for entry in self.player.roads_placed:
             p1 = entry[0]
             p2 = entry[1]
             pygame.draw.line(WIN, RED, p1, p2, width=7)
@@ -534,8 +596,11 @@ class View:
         self.draw_total_rolled(self.player.last_total_rolled)
 
         self.draw_message_and_display()
-
-        self.draw_legal_road_positions()
+        if self.player.placing_roads:
+            self.draw_legal_road_positions()
+            self.draw_road_boxes()
+        else:
+            self.draw_roads_placed()
 
         if self.player.dev_card_display_open:
             self.player.draw_dev_display()
@@ -558,21 +623,30 @@ class Controller:
             if self.board.game_started:
                 self.player.placing_settlement = True
             return
+
         # Handle the case where the development cards are open
         if self.player.dev_card_display_open:
             if not self.check_dev_card_clicked(x_cord, y_cord):
                 self.player.dev_card_display_open = False
                 return
+
+        # Handle the case where the development cards are not open
+        if not self.player.dev_card_display_open:
+            if self.check_dev_card_clicked(x_cord, y_cord):
+                self.player.dev_card_display_open = True
+
         # Handle the case where the legal settlement positions are drawn
         if self.player.placing_settlement:
             # The player is placing a settlement, so check if that click was a legal position
             if self.check_settlement_placed(x_cord, y_cord):
                 self.player.placing_settlement = False
                 self.bot.place_settlement()
-        # Handle the case where the development cards are not open
-        if not self.player.dev_card_display_open:
-            if self.check_dev_card_clicked(x_cord, y_cord):
-                self.player.dev_card_display_open = True
+                self.player.placing_roads = True
+
+        # Handle the case where the player is placing roads
+        if self.player.placing_roads:
+            if self.check_road_box_clicked(x_cord, y_cord):
+                self.player.placing_roads = False
 
         dice_roll = self.check_roll_dice_clicked_and_roll(x_cord, y_cord)
         if dice_roll:
@@ -583,7 +657,7 @@ class Controller:
     def check_settlement_placed(self, x_cord, y_cord):
         for pos in legal_settlement_pos:
             if math.hypot(pos[0] - x_cord, pos[1] - y_cord) <= settlement_circle_size:
-                self.player.settlements_placed.append(pos)
+                self.player.place_settlement_update_roads(pos)
                 legal_settlement_pos.remove(pos)
                 # To remove any adjacent spots from the legal settlement positions, form a circle around the settlement
                 # chosen with a radius of 62
@@ -593,6 +667,13 @@ class Controller:
                         remove_list.append(settlement_pos)
                 for entry in remove_list:
                     legal_settlement_pos.remove(entry)
+                return True
+        return False
+
+    def check_road_box_clicked(self, x_coord, y_coord):
+        for box in self.player.legal_road_boxes:
+            if self.get_distance(x_coord, y_coord, box[0][0], box[0][1]) <= settlement_circle_size:
+                self.player.roads_placed.append(box[1])
                 return True
         return False
 
@@ -651,6 +732,7 @@ class TestController(Controller):
             if self.check_settlement_placed(x_cord, y_cord):
                 self.player.placing_settlement = True
                 self.bot.place_settlement()
+                self.player.placing_roads = True
         # Handle the case where the development cards are not open
         if not self.player.dev_card_display_open:
             if self.check_dev_card_clicked(x_cord, y_cord):
@@ -676,6 +758,8 @@ def main():
     # Controller used for creating the game, does not obey all the rules
     # just for convenience
     test_controller1 = TestController(board1, player1, bot1)
+
+    pos = []
 
     run = True
     while run:
