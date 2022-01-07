@@ -71,11 +71,14 @@ all_settlement_pos = [(320, 36), (415, 35), (516, 35), (273, 61), (368, 62), (46
 all_road_positions = []
 all_road_boxes = []
 
+global initial_setup
+initial_setup = True
+
 
 class MathFunc:
     @staticmethod
     def midpoint(p1: list, p2: list):
-        return ((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2)
+        return (p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2
 
 
 math_func = MathFunc()
@@ -361,6 +364,10 @@ class Player:
         self.last_total_rolled = -1
         self.placing_roads = False
 
+        # True if it is the start of the game where all players place 2 settlements
+        # False otherwise
+        self.initial_setup = True
+
     def init_resource_cards(self):
         card_names = ['brick', 'wood', 'ore', 'sheep', 'wheat']
         for name in card_names:
@@ -399,7 +406,7 @@ class Player:
     def place_settlement_update_roads(self, settlement_pos):
         self.settlements_placed.append(settlement_pos)
         for road_pos in all_road_positions:
-            if road_pos not in self.legal_road_pos and \
+            if road_pos not in self.legal_road_pos and road_pos not in self.roads_placed and \
                     (road_pos[0] == settlement_pos or road_pos[1] == settlement_pos):
                 self.legal_road_pos.append(road_pos)
         for road_pos in self.legal_road_pos:
@@ -511,20 +518,31 @@ class Bot(Player):
 
     # Method for the bot to choose a position to put a settlement
     # TODO make the bot placing settlements smarter than random
-    def place_settlement(self):
+    def place_settlement(self, place_road):
         choice = random.choice(legal_settlement_pos)
         self.settlements_placed.append(choice)
 
         # Remove the position chosen and the adjacent positions from legal_settlement_pos
         legal_settlement_pos.remove(choice)
-        remove_list = []
-        for settlement_pos in legal_settlement_pos:
+        for settlement_pos in legal_settlement_pos[:]:
             if self.get_distance(choice[0], choice[1], settlement_pos[0], settlement_pos[1]) <= 62:
-                remove_list.append(settlement_pos)
-        for entry in remove_list:
-            legal_settlement_pos.remove(entry)
+                legal_settlement_pos.remove(settlement_pos)
+        if place_road:
+            self.update_legal_road_pos(choice)
+            self.place_random_road()
 
-        # Now draw the settlement that was chosen
+
+    def update_legal_road_pos(self, settlement_pos):
+        for road_pos in all_road_positions:
+            if road_pos not in self.legal_road_pos and \
+                    (road_pos[0] == settlement_pos or road_pos[1] == settlement_pos):
+                self.legal_road_pos.append(road_pos)
+
+    def place_random_road(self):
+        road_picked = random.choice(self.legal_road_pos)
+        self.roads_placed.append(road_picked)
+        self.legal_road_pos.remove(road_picked)
+
 
     @staticmethod
     def get_distance(x1, y1, x2, y2):
@@ -568,6 +586,12 @@ class View:
             p2 = entry[1]
             pygame.draw.line(WIN, RED, p1, p2, width=7)
 
+    def draw_legal_road_pos_bot(self):
+        for entry in self.bot.legal_road_pos:
+            p1 = entry[0]
+            p2 = entry[1]
+            pygame.draw.line(WIN, RED, p1, p2, width=7)
+
     def draw_road_boxes(self):
         for pos in self.player.legal_road_boxes:
             pygame.draw.circle(WIN, GRAY, (pos[0][0], pos[0][1]), settlement_circle_size)
@@ -577,6 +601,10 @@ class View:
             p1 = entry[0]
             p2 = entry[1]
             pygame.draw.line(WIN, RED, p1, p2, width=7)
+        for entry in self.bot.roads_placed:
+            p1 = entry[0]
+            p2 = entry[1]
+            pygame.draw.line(WIN, GREEN, p1, p2, width=7)
 
     # Renders all of the info
     def draw_board(self):
@@ -640,13 +668,17 @@ class Controller:
             # The player is placing a settlement, so check if that click was a legal position
             if self.check_settlement_placed(x_cord, y_cord):
                 self.player.placing_settlement = False
-                self.bot.place_settlement()
                 self.player.placing_roads = True
 
         # Handle the case where the player is placing roads
         if self.player.placing_roads:
             if self.check_road_box_clicked(x_cord, y_cord):
                 self.player.placing_roads = False
+                if self.player.initial_setup:
+                    self.bot.place_settlement(True)
+                    self.bot.place_settlement(True)
+                    self.player.placing_settlement = True
+                    self.player.initial_setup = False
 
 
         dice_roll = self.check_roll_dice_clicked_and_roll(x_cord, y_cord)
@@ -675,6 +707,7 @@ class Controller:
         for box in self.player.legal_road_boxes:
             if self.get_distance(x_coord, y_coord, box[0][0], box[0][1]) <= settlement_circle_size:
                 self.player.roads_placed.append(box[1])
+                print(self.player.roads_placed)
                 return True
         return False
 
